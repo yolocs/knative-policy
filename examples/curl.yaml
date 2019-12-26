@@ -7,8 +7,8 @@ metadata:
     sidecar.istio.io/inject: "false"
   name: curl-proxy
 spec:
-  # serviceAccountName: user3
-  serviceAccountName: user-no-perm
+  serviceAccountName: user3
+  # serviceAccountName: user-no-perm
   securityContext:
     fsGroup: 2000
   volumes:
