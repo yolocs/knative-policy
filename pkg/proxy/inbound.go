@@ -79,9 +79,13 @@ func (s *Inbound) Handler(next http.Handler) func(w http.ResponseWriter, req *ht
 }
 
 func (s *Inbound) ModifyReponse(resp *http.Response) error {
-	if s.ReplyWithIdentity {
-		if t, ok := s.Tokens.AudiencelessToken(); ok {
-			resp.Header.Set(ForwardedAuthorizationHeader, t)
+	// Only returns identity if request was successful and
+	// there is a response body.
+	if s.ReplyWithIdentity && resp.StatusCode < 400 {
+		if resp.ContentLength > 0 {
+			if t, ok := s.Tokens.AudiencelessToken(); ok {
+				resp.Header.Set(ForwardedAuthorizationHeader, t)
+			}
 		}
 	}
 	return nil

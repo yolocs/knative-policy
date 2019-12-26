@@ -28,6 +28,8 @@ spec:
       labels:
         app: event-echo
     spec:
+      securityContext:
+        fsGroup: 2000
       volumes:
         - name: jwks-volume
           configMap:
@@ -41,14 +43,14 @@ spec:
             - serviceAccountToken:
                 path: token
                 expirationSeconds: 7200
-                audience: ptst1.svc.cluser.local
+                audience: ptst1.svc.cluster.local
         - name: cluster-token
           projected:
             sources:
             - serviceAccountToken:
                 path: token
                 expirationSeconds: 7200
-                audience: svc.cluser.local
+                audience: svc.cluster.local
         - name: unscoped-token
           projected:
             sources:
@@ -58,7 +60,7 @@ spec:
                 audience: ""
       initContainers:
       - name: kn-proxy-init
-        image: gcr.io/cshou-playground/knative-policy/proxy-init@sha256:b4f667f54632e534cb65e035bda70214cba859bb42559041aa3e8a9a4e16c1d4
+        image: github.com/yolocs/knative-policy/cmd/proxy-init
         env:
           - name: PROXY_INBOUND_PORT
             value: "8081"
@@ -66,11 +68,12 @@ spec:
             value: "8082"
           - name: SERVICE_PORT
             value: "8080"
+          - name: PROXY_OWNER
+            value: "1337"
         securityContext:
           capabilities:
             add:
             - NET_ADMIN
-          privileged: true
       containers:
       - name: event-echo
         image: github.com/yolocs/eventing-proxy/cmd/echo-event
@@ -82,15 +85,18 @@ spec:
         ports:
           - containerPort: 8081
             name: http-proxy-in
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsUser: 1337
         volumeMounts:
         - name: jwks-volume
           mountPath: /var/run/configs/authn
         - name: policy-volume
           mountPath: /var/run/configs/authz
         - name: ns-token
-          mountPath: /var/run/secrets/tokens/ptst1.svc.cluser.local
+          mountPath: /var/run/secrets/tokens/ptst1.svc.cluster.local
         - name: cluster-token
-          mountPath: /var/run/secrets/tokens/svc.cluser.local
+          mountPath: /var/run/secrets/tokens/svc.cluster.local
         - name: unscoped-token
           mountPath: /var/run/secrets/tokens/UNSCOPED
         env:

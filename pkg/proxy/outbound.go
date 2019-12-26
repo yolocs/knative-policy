@@ -15,15 +15,22 @@ type Outbound struct {
 }
 
 func (s *Outbound) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if req.URL.Hostname() == "" {
+		req.URL.Host = req.Host
+	}
+	if req.URL.Scheme == "" {
+		req.URL.Scheme = "http"
+	}
 	s.Logger.Infof("Forwarding request: %s %s", req.Method, req.URL)
-	if !req.URL.IsAbs() {
+
+	if req.Host == "" {
 		http.Error(w, "Only absolute URL is supported", http.StatusBadRequest)
 		return
 	}
 
 	t, ok := s.Tokens.FindToken(req.URL.Hostname())
 	if !ok {
-		s.Logger.Infof("No token found for request to %q; sending request anonymously", req.URL.String())
+		s.Logger.Infof("No token found for request to %q; sending request anonymously", req.URL.Hostname())
 	}
 
 	req.Header.Set(AuthorizationHeader, t)
