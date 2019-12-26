@@ -1,0 +1,30 @@
+{
+  "https://container.googleapis.com/v1/projects/cshou-playground/locations/us-west1-c/clusters/no-istio": [
+    {
+      "kty": "RSA",
+      "alg": "RS256",
+      "use": "sig",
+      "kid": "q51pBlqeDZAb77GLNm62J-KQDbi1VF2nczAFrTs5oS8",
+      "n": "vt1DKhkGaabd-zKO3HcpB0TrZ-dggC6fOzezTMbsGg7u1sInwYCIVRvK5m2JfiA_VycpxEHpO8IYz0pJkSQg26BxjAzJFDZzCaERoP7VXOgZ9ATxSZ3H8PvQdMvylImvbhKuOFzYUlVnBVKNwSVmr_H7K6DvNhFiH6C_HSv_Zk5PDV5GhpsYDpz7atn67vA4hPFJXQydiFhWMrlpHJDVALNpb3fr-XFXBEOWsRjcsvJPh2GhNjSLlsHbsWWVsElWF3SWR0Xr_qOQO-30p8BGW7hzFXQSl3Zi4CLmEn6BEeWn5_zjEQpnNdg_AXT7G_qa5qwW4n_4AwVlAE_um0quMQ",
+      "e": "AQAB"
+    }
+  ],
+  "https://www.googleapis.com/oauth2/v3": [
+    {
+      "use": "sig",
+      "kid": "2011091da03baa40919e6ff836c8e7f9afaba9a8",
+      "e": "AQAB",
+      "kty": "RSA",
+      "alg": "RS256",
+      "n": "z6o_ngxsUgKtwNDygS7PAXPROup7CFmrINOpelvd_iMnkJhz_uRwlK5Ygk-WNKzG3QTUroYJg0CJqPdPT9_CDBRuCn5lWt5ieglg8bvKRtztLLwRdVHCOZ5x9dPEcXHKZZj9ycO5bzc9vLyEHeaUXRVvnteyTCT5pdN58EZBuVD7Ea14PVia2v2fD1kSZOTPkT4gFdCcSKq6_truGLX4Y-40Y1cAhwkS-8A9xMXq_qbmIjX8y-D0aimBYazNqxziwwapfN9sodUwncFbCAcGXss0RxzB6-lQHfzV0qvYTBErQ2XpgUHTYnHn94jmRgeDSfwewVP8inrK4zEghclrzw"
+    },
+    {
+      "use": "sig",
+      "kid": "57b1928f2f63329f2e92f4f278f94ee1038c923c",
+      "e": "AQAB",
+      "kty": "RSA",
+      "alg": "RS256",
+      "n": "1Zi0-4bNwZ7gGefz17U2NoKT4xBq-nzAa899teHxB2Q9KVCZYDhbQkpiIrBNg2u8s6TtoSljpq6MJpsKJVJgpT70gDCCgaUsGNYql9-kwWNKd80FlU1sjDEGouUIVEoYHzooPyn9r027KzMnTv5LGRYjxb5lvGnb4UCw5MF_EeSTNpGD7zb0b6juXwBxPi0oIUbQxAcGgH3oS40hXAjJ_U2T3Hln8lBlnVhLbrh-5qF-uoYDxjtAY9XyEJQH_rGiRfXWgBfSM02t9DCB46sQbEMM2iLe7mkGrZtCHR4zbAsAP0s2VGqSmwszNTWqqsdOccbfXp3i_ThkR3pDdTSIQQ"
+    }
+  ]
+}

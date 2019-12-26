@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: curl
+  annotations:
+    sidecar.istio.io/inject: "true"
+  name: curl
+spec:
+  serviceAccountName: user3
+  containers:
+    # This could be any image that we can SSH into and has curl.
+  - image: governmentpaas/curl-ssl
+    imagePullPolicy: IfNotPresent
+    name: curl
+    command: ["/bin/sleep", "3650d"]
+    volumeMounts:
+    - mountPath: /var/run/secrets/tokens
+      name: user3-token
+  volumes:
+  - name: user3-token
+    projected:
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 86400
+          path: user3-token
+          audience: "*.ptst1.svc.cluster.local"

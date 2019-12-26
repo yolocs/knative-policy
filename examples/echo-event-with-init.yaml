@@ -1,0 +1,141 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: event-echo
+  name: event-echo
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  selector:
+    app: event-echo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-echo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: event-echo
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app: event-echo
+    spec:
+      volumes:
+        - name: jwks-volume
+          configMap:
+            name: jwks
+        - name: policy-volume
+          configMap:
+            name: policy-sa-default
+        - name: ns-token
+          projected:
+            sources:
+            - serviceAccountToken:
+                path: token
+                expirationSeconds: 7200
+                audience: ptst1.svc.cluser.local
+        - name: cluster-token
+          projected:
+            sources:
+            - serviceAccountToken:
+                path: token
+                expirationSeconds: 7200
+                audience: svc.cluser.local
+        - name: unscoped-token
+          projected:
+            sources:
+            - serviceAccountToken:
+                path: token
+                expirationSeconds: 7200
+                audience: ""
+      initContainers:
+      - name: kn-proxy-init
+        image: gcr.io/cshou-playground/knative-policy/proxy-init@sha256:b4f667f54632e534cb65e035bda70214cba859bb42559041aa3e8a9a4e16c1d4
+        env:
+          - name: PROXY_INBOUND_PORT
+            value: "8081"
+          - name: PROXY_OUTBOUND_PORT
+            value: "8082"
+          - name: SERVICE_PORT
+            value: "8080"
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+          privileged: true
+      containers:
+      - name: event-echo
+        image: github.com/yolocs/eventing-proxy/cmd/echo-event
+        ports:
+          - containerPort: 8080
+            name: http
+      - name: kn-proxy
+        image: github.com/yolocs/knative-policy/cmd/proxy
+        ports:
+          - containerPort: 8081
+            name: http-proxy-in
+        volumeMounts:
+        - name: jwks-volume
+          mountPath: /var/run/configs/authn
+        - name: policy-volume
+          mountPath: /var/run/configs/authz
+        - name: ns-token
+          mountPath: /var/run/secrets/tokens/ptst1.svc.cluser.local
+        - name: cluster-token
+          mountPath: /var/run/secrets/tokens/svc.cluser.local
+        - name: unscoped-token
+          mountPath: /var/run/secrets/tokens/UNSCOPED
+        env:
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+          - name: JWKS_FILE
+            value: /var/run/configs/authn/jwks.json
+          - name: POLICY_FILE
+            value: /var/run/configs/authz/policy.json
+          - name: TOKEN_ROOT
+            value: /var/run/secrets/tokens
+          - name: ENABLE_REPLY_IDENTITY
+            value: "true"
+          - name: PROXY_INBOUND_PORT
+            value: "8081"
+          - name: PROXY_OUTBOUND_PORT
+            value: "8082"
+          - name: SERVICE_PORT
+            value: "8080"
+          - name: LOGGING_CONFIG
+            value: |-
+              {
+                "level": "info",
+                "development": false,
+                "outputPaths": ["stdout"],
+                "errorOutputPaths": ["stderr"],
+                "encoding": "json",
+                "encoderConfig": {
+                  "timeKey": "ts",
+                  "levelKey": "level",
+                  "nameKey": "logger",
+                  "callerKey": "caller",
+                  "messageKey": "msg",
+                  "stacktraceKey": "stacktrace",
+                  "lineEnding": "",
+                  "levelEncoder": "",
+                  "timeEncoder": "iso8601",
+                  "durationEncoder": "",
+                  "callerEncoder": ""
+                }
+              }
+          - name: LOGGING_LEVEL
