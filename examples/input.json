@@ -1,0 +1,12 @@
+{
+  "source": {
+    "identity": "system:serviceaccount:ptst1:user3"
+  },
+  "request": {
+    "header": {
+      "Ce-Eventtype": [
+        "echo"
+      ]
+    }
+  }
+}

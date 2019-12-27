@@ -66,9 +66,9 @@ func main() {
 	if err != nil {
 		logger.Fatalf("failed to load JWKs: %v", err)
 	}
-	policies, err := authz.NewPolicies(env.PolicyFile)
+	opapolicy, err := authz.NewOPAPolicy(logger, env.PolicyFile)
 	if err != nil {
-		logger.Fatalf("failed to load policies: %v", err)
+		logger.Fatalf("failed to load OPA policy: %v", err)
 	}
 	tokens, err := token.NewLocal(env.TokenRoot)
 	if err != nil {
@@ -76,12 +76,12 @@ func main() {
 	}
 	// Start file refreshes
 	jwks.Start(ctx)
-	policies.Start(ctx)
+	opapolicy.Start(ctx)
 	tokens.Start(ctx)
 
 	inbound := &proxy.Inbound{
 		Jwks:                 jwks,
-		Policies:             policies,
+		Policy:               opapolicy,
 		Tokens:               tokens,
 		ApplyPolicyOnPayload: env.EnablePayloadPolicy,
 		ReplyWithIdentity:    env.EnableReplyIdentity,

@@ -36,7 +36,7 @@ spec:
             name: jwks
         - name: policy-volume
           configMap:
-            name: policy-sa-default
+            name: opa-policy-example
         - name: ns-token
           projected:
             sources:
@@ -111,10 +111,12 @@ spec:
           - name: JWKS_FILE
             value: /var/run/configs/authn/jwks.json
           - name: POLICY_FILE
-            value: /var/run/configs/authz/policy.json
+            value: /var/run/configs/authz/policy.rego
           - name: TOKEN_ROOT
             value: /var/run/secrets/tokens
           - name: ENABLE_REPLY_IDENTITY
+            value: "true"
+          - name: ENABLE_PAYLOAD_POLICY
             value: "true"
           - name: PROXY_INBOUND_PORT
             value: "8081"
@@ -125,7 +127,7 @@ spec:
           - name: LOGGING_CONFIG
             value: |-
               {
-                "level": "info",
+                "level": "debug",
                 "development": false,
                 "outputPaths": ["stdout"],
                 "errorOutputPaths": ["stderr"],

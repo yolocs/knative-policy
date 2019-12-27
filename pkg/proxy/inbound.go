@@ -1,6 +1,8 @@
 package proxy
 
 import (
+	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 
@@ -17,9 +19,9 @@ var (
 )
 
 type Inbound struct {
-	Jwks     *authn.Jwks
-	Policies *authz.Policies
-	Tokens   *token.Local
+	Jwks   *authn.Jwks
+	Policy *authz.OPAPolicy
+	Tokens *token.Local
 
 	ApplyPolicyOnPayload bool
 	ReplyWithIdentity    bool
@@ -44,25 +46,22 @@ func (s *Inbound) Handler(next http.Handler) func(w http.ResponseWriter, req *ht
 				w.WriteHeader(http.StatusBadGateway)
 				return
 			}
+			req.Body = ioutil.NopCloser(bytes.NewReader(payload))
 		}
 
-		if token == "" {
-			if !s.Policies.IsAllowed("", req.Header, payload) {
-				w.WriteHeader(http.StatusForbidden)
-				return
+		claims := make(map[string]interface{})
+		if token != "" {
+			var err error
+			claims, err = s.Jwks.GetClaims(token)
+			if err != nil {
+				if err == authn.ErrCannotVerifyJSONWebToken || err == authn.ErrJSONWebTokenMissingIssuer {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
 			}
 		}
 
-		claims, err := s.Jwks.GetClaims(token)
-		if err != nil {
-			if err == authn.ErrCannotVerifyJSONWebToken || err == authn.ErrJSONWebTokenMissingIssuer {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-		}
-
-		sub := claims["sub"].(string)
-		if !s.Policies.IsAllowed(sub, req.Header, payload) {
+		if !s.Policy.IsAllowed(req.Context(), s.evalInput(claims, req, payload)) {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
@@ -75,6 +74,46 @@ func (s *Inbound) Handler(next http.Handler) func(w http.ResponseWriter, req *ht
 		// }
 
 		next.ServeHTTP(w, req)
+	}
+}
+
+func (s *Inbound) evalInput(claims map[string]interface{}, req *http.Request, payload []byte) authz.EvalInput {
+	src := authz.Source{}
+
+	if v, ok := claims["sub"]; ok {
+		src.Identity = v.(string)
+	}
+	if v, ok := claims["iss"]; ok {
+		src.Issuer = v.(string)
+	}
+	if v, ok := claims["aud"]; ok {
+		// Only support single audience now
+		auds := v.([]interface{})
+		if len(auds) > 0 {
+			src.Audience = auds[0].(string)
+		}
+	}
+
+	var b map[string]interface{}
+	if payload != nil {
+		if err := json.Unmarshal(payload, &b); err != nil {
+			s.Logger.Errorw("request payload cannot be unmarshalled", zap.Error(err))
+		}
+	}
+
+	r := authz.PartialRequest{
+		Method:        req.Method,
+		Host:          req.Host,
+		Path:          req.RequestURI,
+		ContentLength: req.ContentLength,
+		RemoteAddr:    req.RemoteAddr,
+		Header:        req.Header,
+		Body:          b,
+	}
+
+	return authz.EvalInput{
+		Source:  src,
+		Request: r,
 	}
 }
 

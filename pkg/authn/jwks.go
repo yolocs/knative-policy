@@ -70,6 +70,13 @@ func (j *Jwks) GetClaims(rawToken string) (map[string]interface{}, error) {
 		return nil, ErrCannotVerifyJSONWebToken
 	}
 
+	if expRaw, ok := claims["exp"]; ok {
+		exp := time.Unix(int64(expRaw.(float64)), 0)
+		if exp.Before(time.Now()) {
+			return nil, ErrCannotVerifyJSONWebToken
+		}
+	}
+
 	return claims, nil
 }
 
