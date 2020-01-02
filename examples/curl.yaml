@@ -4,7 +4,7 @@ metadata:
   labels:
     run: curl-proxy
   annotations:
-    sidecar.istio.io/inject: "false"
+    sidecar.istio.io/inject: "true"
   name: curl-proxy
 spec:
   serviceAccountName: user3
@@ -18,27 +18,42 @@ spec:
     - name: policy-volume
       configMap:
         name: opa-policy-example
-    - name: ns-token
+    - name: tokens-volume
       projected:
         sources:
         - serviceAccountToken:
-            path: token
+            path: ptst1.svc.cluster.local
             expirationSeconds: 7200
             audience: ptst1.svc.cluster.local
-    - name: cluster-token
-      projected:
-        sources:
         - serviceAccountToken:
-            path: token
+            path: svc.cluster.local
             expirationSeconds: 7200
             audience: svc.cluster.local
-    - name: unscoped-token
-      projected:
-        sources:
         - serviceAccountToken:
-            path: token
+            path: unscoped
             expirationSeconds: 7200
             audience: ""
+    # - name: ns-token
+    #   projected:
+    #     sources:
+    #     - serviceAccountToken:
+    #         path: token
+    #         expirationSeconds: 7200
+    #         audience: ptst1.svc.cluster.local
+    # - name: cluster-token
+    #   projected:
+    #     sources:
+    #     - serviceAccountToken:
+    #         path: token
+    #         expirationSeconds: 7200
+    #         audience: svc.cluster.local
+    # - name: unscoped-token
+    #   projected:
+    #     sources:
+    #     - serviceAccountToken:
+    #         path: token
+    #         expirationSeconds: 7200
+    #         audience: ""
   initContainers:
   - name: kn-proxy-init
     image: github.com/yolocs/knative-policy/cmd/proxy-init
@@ -61,6 +76,13 @@ spec:
     imagePullPolicy: IfNotPresent
     name: curl-proxy
     command: ["/bin/sleep", "3650d"]
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+    volumeMounts:
+      - name: tokens-volume
+        mountPath: /var/run/secrets/tokens
   - name: kn-proxy
     image: github.com/yolocs/knative-policy/cmd/proxy
     ports:
@@ -70,16 +92,19 @@ spec:
       readOnlyRootFilesystem: true
       runAsUser: 1337
     volumeMounts:
-    - name: jwks-volume
-      mountPath: /var/run/configs/authn
-    - name: policy-volume
-      mountPath: /var/run/configs/authz
-    - name: ns-token
-      mountPath: /var/run/secrets/tokens/ptst1.svc.cluster.local
-    - name: cluster-token
-      mountPath: /var/run/secrets/tokens/svc.cluster.local
-    - name: unscoped-token
-      mountPath: /var/run/secrets/tokens/UNSCOPED
+      - name: tokens-volume
+        mountPath: /var/run/secrets/tokens
+    # volumeMounts:
+      - name: jwks-volume
+        mountPath: /var/run/configs/authn
+      - name: policy-volume
+        mountPath: /var/run/configs/authz
+    # - name: ns-token
+    #   mountPath: /var/run/secrets/tokens/ptst1.svc.cluster.local
+    # - name: cluster-token
+    #   mountPath: /var/run/secrets/tokens/svc.cluster.local
+    # - name: unscoped-token
+    #   mountPath: /var/run/secrets/tokens/UNSCOPED
     env:
       - name: NAMESPACE
         valueFrom:

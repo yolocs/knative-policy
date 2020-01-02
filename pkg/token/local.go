@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	audiencelessTokenName string = "UNSCOPED"
+	audiencelessTokenName string = "unscoped"
 )
 
 var tokenRefreshInterval time.Duration = 5 * time.Minute
@@ -38,7 +38,10 @@ func NewLocal(tokenRootDir string) (*Local, error) {
 
 	for _, sub := range subTokenDirs {
 		aud := sub.Name()
-		p := filepath.Join(tokenRootDir, aud, "token")
+		if strings.HasPrefix(aud, "..") {
+			continue
+		}
+		p := filepath.Join(tokenRootDir, aud)
 		c, err := utils.NewFileCache(p, tokenRefreshInterval, func(d []byte) error {
 			l.data.Store(aud, string(d))
 			return nil

@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: curl-proxy
+  annotations:
+    proxy.knative.dev/inject: "true"
+    proxy.knative.dev/settings: "{\"tokenExpiration\":7200,\"audiences\":[\"ptst2.svc.cluster.local\",\"svc.cluster.local\",\"event-echo.ptst2.svc.cluster.local\"],\"policy\":\"opa-policy-example\",\"servicePort\":8080,\"replyIdentity\":true,\"payloadPolicy\":true}"
+  name: curl-proxy
+spec:
+  serviceAccountName: user3
+  # serviceAccountName: user-no-perm
+  containers:
+    # This could be any image that we can SSH into and has curl.
+  - image: governmentpaas/curl-ssl
+    imagePullPolicy: IfNotPresent
+    name: curl-proxy
+    command: ["/bin/sleep", "3650d"]

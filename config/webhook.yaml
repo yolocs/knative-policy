@@ -1,0 +1,142 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: knative-policy-webhook
+rules:
+  # For watching logging configuration and getting certs.
+  - apiGroups:
+      - ""
+    resources:
+      - "configmaps"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+
+  # For manipulating certs into secrets.
+  - apiGroups:
+      - ""
+    resources:
+      - "secrets"
+    verbs:
+      - "get"
+      - "create"
+      - "update"
+      - "list"
+      - "watch"
+
+  # For getting our Deployment so we can decorate with ownerref.
+  - apiGroups:
+      - "apps"
+    resources:
+      - "deployments"
+    verbs:
+      - "get"
+
+  - apiGroups:
+      - "apps"
+    resources:
+      - "deployments/finalizers"
+    verbs:
+      - update
+
+  # For actually registering our webhook.
+  - apiGroups:
+      - "admissionregistration.k8s.io"
+    resources:
+      - "mutatingwebhookconfigurations"
+      - "validatingwebhookconfigurations"
+    verbs: &everything
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "delete"
+      - "patch"
+      - "watch"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: policy-webhook
+subjects:
+  - kind: ServiceAccount
+    name: policy-webhook
+    namespace: knative-policy
+roleRef:
+  kind: ClusterRole
+  name: knative-policy-webhook
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    role: policy-webhook
+  name: policy-webhook
+  namespace: knative-policy
+spec:
+  ports:
+    - name: https-webhook
+      port: 443
+      targetPort: 8443
+  selector:
+    role: policy-webhook
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: webhook.policy.knative.dev
+webhooks:
+- admissionReviewVersions:
+  - v1beta1
+  clientConfig:
+    service:
+      name: policy-webhook
+      namespace: knative-policy
+  failurePolicy: Fail
+  name: webhook.policy.knative.dev
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: policy-webhook-certs
+  namespace: knative-policy
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-webhook
+  namespace: knative-policy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: policy-webhook
+      role: policy-webhook
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app: policy-webhook
+        role: policy-webhook
+    spec:
+      serviceAccountName: policy-webhook
+      containers:
+      - name: policy-webhook
+        terminationMessagePolicy: FallbackToLogsOnError
+        # This is the Go import path for the binary that is containerized
+        # and substituted here.
+        image: github.com/yolocs/knative-policy/cmd/webhook
+        env:
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: METRICS_DOMAIN
+          value: knative.dev/policy
+        - name: WEBHOOK_NAME
+          value: policy-webhook
