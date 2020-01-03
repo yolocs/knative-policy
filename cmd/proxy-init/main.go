@@ -15,6 +15,8 @@ type config struct {
 	ProxyOutboundPort int    `split_words:"true" required:"true"`
 	ProxyOwner        string `split_words:"true" required:"true"`
 	ServicePort       int    `split_words:"true" required:"true"`
+	DisableInbound    bool   `split_words:"true"`
+	DisableOutbound   bool   `split_words:"true"`
 }
 
 var logger *zap.SugaredLogger
@@ -40,14 +42,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := configInbound(env, ipt); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	if !env.DisableInbound {
+		if err := configInbound(env, ipt); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	}
 
-	if err := configOutbound(env, ipt); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	if !env.DisableOutbound {
+		if err := configOutbound(env, ipt); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	}
 }
 
@@ -57,6 +63,6 @@ func configInbound(env config, ipt *iptables.IPTables) error {
 }
 
 func configOutbound(env config, ipt *iptables.IPTables) error {
-	rule := []string{"-p", "tcp", "-j", "REDIRECT", "!", "-s", "127.0.0.1/32", "--to-port", strconv.Itoa(env.ProxyOutboundPort), "-m", "owner", "!", "--uid-owner", env.ProxyOwner}
+	rule := []string{"-p", "tcp", "!", "--dport", "443", "-j", "REDIRECT", "!", "-s", "127.0.0.1/32", "--to-port", strconv.Itoa(env.ProxyOutboundPort), "-m", "owner", "!", "--uid-owner", env.ProxyOwner}
 	return ipt.Append(TableNAT, ChainOutput, rule...)
 }

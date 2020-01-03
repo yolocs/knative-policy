@@ -1,0 +1,13 @@
+apiVersion: v1
+data:
+  policy.rego: |
+    package knative.dev
+
+    default allow = false
+
+    allow = {
+      startswith(input.source.identity, "system:serviceaccount:knative-eventing:imc-dispatcher")
+    }
+kind: ConfigMap
+metadata:
+  name: broker-f-policy

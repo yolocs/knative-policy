@@ -1,4 +1,0 @@
-{
-  "system:serviceaccount:default:user1": true,
-  "system:serviceaccount:ns1:user2": true
-}

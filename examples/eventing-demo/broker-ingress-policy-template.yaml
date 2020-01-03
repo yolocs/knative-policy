@@ -1,0 +1,15 @@
+apiVersion: v1
+data:
+  policy.rego: |-
+    package knative.dev
+
+    default allow = false
+
+    allow {
+      startswith(input.source.identity, "system:serviceaccount:{{.NAMESPACE}}:eventing-broker-filter")
+    }
+
+    {{.CUSTOM_POLICY}}
+kind: ConfigMap
+metadata:
+  name: broker-in-policy

@@ -1,0 +1,9 @@
+apiVersion: v1
+data:
+  policy.rego: |
+    package knative.dev
+
+    default allow = false
+kind: ConfigMap
+metadata:
+  name: default-policy

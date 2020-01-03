@@ -28,8 +28,8 @@ func NewInjectorAdmissionController(ctx context.Context, cmw configmap.Watcher) 
 
 		// Whether to disallow unknown fields.
 		&injector.Config{
-			ProxyImage:        "gcr.io/cshou-playground/proxy-3e029f88b6d98bb38d5aadffc575c420@sha256:2c4c4c35649a3ce3ebd51396b1d36bfbd26b57db0540c56d727cc22caddb1d17",
-			ProxyInitImage:    "gcr.io/cshou-playground/proxy-init-8d73b8e06c8aee6d6697e33267e0213d@sha256:32635f13d26a0a2b652cbe09d7b40bb99a0b36c10d116152840892c9435ee172",
+			ProxyImage:        "gcr.io/cshou-playground/proxy-3e029f88b6d98bb38d5aadffc575c420@sha256:0a9d3baaf5fb7f43550f3abd98bfd62e0cb8a7717faa527a3f09e396dc87cc2f",
+			ProxyInitImage:    "gcr.io/cshou-playground/proxy-init-8d73b8e06c8aee6d6697e33267e0213d@sha256:d2ca0f8b6e49a89d9c352f1de53563bac2892199390581fbbf64364b060cd99a",
 			ProxyInboundPort:  8101,
 			ProxyOutboundPort: 8102,
 		},

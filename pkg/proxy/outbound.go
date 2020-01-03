@@ -28,12 +28,16 @@ func (s *Outbound) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	t, ok := s.Tokens.FindToken(req.URL.Hostname())
-	if !ok {
-		s.Logger.Infof("No token found for request to %q; sending request anonymously", req.URL.Hostname())
+	// Don't override application provided header.
+	if req.Header.Get(AuthorizationHeader) == "" {
+		s.Logger.Debug("No Knative token provided, attaching token...")
+		t, ok := s.Tokens.FindToken(req.URL.Hostname())
+		if !ok {
+			s.Logger.Infof("No token found for request to %q; sending request anonymously", req.URL.Hostname())
+		}
+		req.Header.Set(AuthorizationHeader, t)
 	}
 
-	req.Header.Set(AuthorizationHeader, t)
 	resp, err := s.Transport.RoundTrip(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

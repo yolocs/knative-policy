@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -64,6 +65,8 @@ func (o *OPAPolicy) IsAllowed(ctx context.Context, input EvalInput) bool {
 	o.mux.RLock()
 	defer o.mux.RUnlock()
 
+	o.logger.Debugf("Evaluating input: %v", input)
+
 	rs, err := o.cachedQuery.Eval(ctx, rego.EvalInput(input))
 	if err != nil {
 		o.logger.Warnw("failed to evaluate input and will fail-close", zap.Error(err))
@@ -74,7 +77,10 @@ func (o *OPAPolicy) IsAllowed(ctx context.Context, input EvalInput) bool {
 		return false
 	}
 
-	return rs[0].Expressions[0].Value.(bool)
+	o.logger.Debugf("Eval result: %v", rs[0])
+
+	// Super hacky
+	return strings.Contains(fmt.Sprintf("%v", rs[0]), "true")
 }
 
 func (o *OPAPolicy) reloadRego(data []byte) error {

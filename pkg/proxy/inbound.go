@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/yolocs/knative-policy/pkg/authn"
 	"github.com/yolocs/knative-policy/pkg/authz"
@@ -31,12 +32,19 @@ type Inbound struct {
 
 func (s *Inbound) Handler(next http.Handler) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
+		if isKubeletProbe(req) {
+			next.ServeHTTP(w, req)
+			return
+		}
+
 		s.Logger.Infof("Receiver request: %s %s", req.Method, req.RequestURI)
 
 		token := req.Header.Get(ForwardedAuthorizationHeader)
 		if token == "" {
 			token = req.Header.Get(AuthorizationHeader)
 		}
+
+		s.Logger.Debugf("Received token: %q", token)
 
 		var payload []byte
 		if s.ApplyPolicyOnPayload {
@@ -68,6 +76,7 @@ func (s *Inbound) Handler(next http.Handler) func(w http.ResponseWriter, req *ht
 
 		// Remove the authorization header.
 		req.Header.Del(AuthorizationHeader)
+		req.Header.Del(ForwardedAuthorizationHeader)
 		// if s.ReplyWithIdentity {
 		// 	// Currently not used.
 		// 	w.Header().Set(IdentityHintHeader, sub)
@@ -75,6 +84,12 @@ func (s *Inbound) Handler(next http.Handler) func(w http.ResponseWriter, req *ht
 
 		next.ServeHTTP(w, req)
 	}
+}
+
+// IsKubeletProbe returns true if the request is a Kubernetes probe.
+func isKubeletProbe(r *http.Request) bool {
+	return strings.HasPrefix(r.Header.Get("User-Agent"), "kube-probe/") ||
+		r.Header.Get("K-Kubelet-Probe") != ""
 }
 
 func (s *Inbound) evalInput(claims map[string]interface{}, req *http.Request, payload []byte) authz.EvalInput {
@@ -123,6 +138,7 @@ func (s *Inbound) ModifyReponse(resp *http.Response) error {
 	if s.ReplyWithIdentity && resp.StatusCode < 400 {
 		if resp.ContentLength > 0 {
 			if t, ok := s.Tokens.AudiencelessToken(); ok {
+				s.Logger.Debugf("Attaching token in response: %q", t)
 				resp.Header.Set(ForwardedAuthorizationHeader, t)
 			}
 		}

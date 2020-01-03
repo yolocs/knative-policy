@@ -5,10 +5,10 @@ metadata:
     run: curl-proxy
   annotations:
     proxy.knative.dev/inject: "true"
-    proxy.knative.dev/settings: "{\"tokenExpiration\":7200,\"audiences\":[\"default-broker.secexp1.svc.cluster.local\"],\"policy\":\"opa-policy-example\",\"servicePort\":8080,\"disableInboubnd\":true}"
+    proxy.knative.dev/settings: "{\"audiences\":[\"default-broker.{{.NAMESPACE}}.svc.cluster.local\"],\"policy\":\"default-policy\",\"servicePort\":8080,\"disableInboubnd\":true}"
   name: curl-proxy
 spec:
-  serviceAccountName: user1
+  serviceAccountName: curler
   # serviceAccountName: user-no-perm
   containers:
     # This could be any image that we can SSH into and has curl.

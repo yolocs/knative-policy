@@ -25,13 +25,13 @@ spec:
     metadata:
       annotations:
         proxy.knative.dev/inject: "true"
-        proxy.knative.dev/settings: "{\"tokenExpiration\":7200,\"audiences\":[\"ptst2.svc.cluster.local\",\"svc.cluster.local\",\"event-echo.ptst2.svc.cluster.local\"],\"policy\":\"opa-policy-example\",\"servicePort\":8080,\"payloadPolicy\":true}"
+        proxy.knative.dev/settings: "{\"policy\":\"default-policy\",\"servicePort\":8080,\"payloadPolicy\":true}"
       labels:
         app: event-echo
     spec:
       containers:
       - name: event-echo
-        image: github.com/yolocs/eventing-proxy/cmd/echo-event
+        image: gcr.io/cshou-playground/echo-event-4fc66621723d297b4db8701699a668e6@sha256:2f11a9bcd5290299eb1f9e60554df2b2a93aa69d60822a935c1b687c2bc01442
         ports:
           - containerPort: 8080
             name: http

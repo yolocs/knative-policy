@@ -58,13 +58,14 @@ type ProxySettings struct {
 	Jwks            string   `json:"jwks,omitempty"`
 	Policy          string   `json:"policy,omitempty"`
 	ServicePort     int32    `json:"servicePort,omitempty"`
-	ConfigInbound   bool     `json:"configInbound,omitempty"`
-	ReplyIdentity   bool     `json:"replyIdentity.omitempty"`
+	DisableInbound  bool     `json:"disableInbound,omitempty"`
+	DisableOutbound bool     `json:"disableOutbound,omitempty"`
+	ReplyIdentity   bool     `json:"replyIdentity,omitempty"`
 	PayloadPolicy   bool     `json:"payloadPolicy,omitempty"`
 }
 
 func parseProxySettings(podMeta metav1.ObjectMeta) (*ProxySettings, error) {
-	ps := &ProxySettings{ConfigInbound: true}
+	ps := &ProxySettings{}
 
 	if s, ok := podMeta.Annotations[SettingsAnnotation]; ok {
 		if err := json.Unmarshal([]byte(s), ps); err != nil {
@@ -101,7 +102,7 @@ func fillDefaults(settings *ProxySettings, podSpec *corev1.PodSpec) {
 		}
 		// Bad assumption
 		if settings.ServicePort == 0 {
-			settings.ServicePort = 80
+			settings.ServicePort = 8080
 		}
 	}
 }
@@ -198,6 +199,14 @@ func initContainer(cfg *Config, settings *ProxySettings) corev1.Container {
 				Name:  "PROXY_OWNER",
 				Value: "1666",
 			},
+			{
+				Name:  "DISABLE_INBOUND",
+				Value: strconv.FormatBool(settings.DisableInbound),
+			},
+			{
+				Name:  "DISABLE_OUTBOUND",
+				Value: strconv.FormatBool(settings.DisableOutbound),
+			},
 		},
 		SecurityContext: &corev1.SecurityContext{
 			Capabilities: &corev1.Capabilities{
@@ -282,6 +291,14 @@ func proxyContainer(cfg *Config, settings *ProxySettings, vols []corev1.Volume) 
 		{
 			Name:  "LOGGING_LEVEL",
 			Value: "",
+		},
+		{
+			Name:  "DISABLE_INBOUND",
+			Value: strconv.FormatBool(settings.DisableInbound),
+		},
+		{
+			Name:  "DISABLE_OUTBOUND",
+			Value: strconv.FormatBool(settings.DisableOutbound),
 		},
 	}
 	if hasPolicyMount {

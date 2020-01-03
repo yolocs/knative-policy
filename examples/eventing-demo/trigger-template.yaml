@@ -1,0 +1,12 @@
+apiVersion: eventing.knative.dev/v1alpha1
+kind: Trigger
+metadata:
+  name: echo-trigger
+  annotations:
+    impersonate.knative.dev: "system:serviceaccount:{{.NAMESPACE}}:{{.ACCOUNT}}"
+spec:
+  subscriber:
+    ref:
+     apiVersion: v1
+     kind: Service
+     name: event-echo

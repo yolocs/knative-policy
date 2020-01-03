@@ -39,6 +39,9 @@ type config struct {
 
 	EnablePayloadPolicy bool `split_words:"true"`
 	EnableReplyIdentity bool `split_words:"true"`
+
+	DisableInbound  bool `split_words:"true"`
+	DisableOutbound bool `split_words:"true"`
 }
 
 var logger *zap.SugaredLogger
@@ -94,9 +97,13 @@ func main() {
 		Logger:    logger,
 	}
 
-	servers := map[string]*http.Server{
-		"inbound":  buildInboundServer(logger, env, inbound),
-		"outbound": pkgnet.NewServer(":"+strconv.Itoa(env.ProxyOutboundPort), outbound),
+	servers := make(map[string]*http.Server)
+
+	if !env.DisableInbound {
+		servers["inbound"] = buildInboundServer(logger, env, inbound)
+	}
+	if !env.DisableOutbound {
+		servers["outbound"] = pkgnet.NewServer(":"+strconv.Itoa(env.ProxyOutboundPort), outbound)
 	}
 
 	errCh := make(chan error, len(servers))
